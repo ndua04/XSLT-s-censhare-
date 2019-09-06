@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions" exclude-result-prefixes="cs">
+    
+    <!-- This report returns data on all Color assets linked to a specific brand, provided a Brand ID
+         No data is returned if Brand ID is not provided.
+         Bruno Schrappe October 2018
+    -->
+    
+    <xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="no" />
+    <xsl:param name="brandId" select="0"/>
+    
+    <xsl:template match="/">
+        <xsl:variable name="query">
+            <query limit="1">
+                <and>
+                    <condition name="censhare:asset.id" op="=" value="{$brandId}" />
+                    <condition name="censhare:asset.type" op="=" value="brand." />
+                </and>
+            </query>
+        </xsl:variable>
+        
+        <xsl:variable name="brand" select="cs:asset($query)"/>
+        <kwikeeApiV3>
+          <brandName>
+            <xsl:value-of select="$brand/@name"/>
+          </brandName>
+        
+        <xsl:for-each select="$brand/child_asset_rel[@key='color.']">
+          
+
+                  <xsl:variable name="subQuery">
+                  <query limit="1" type="asset">
+                    <condition name="censhare:asset.id" value="{@child_asset}"/>
+                  </query>
+                  </xsl:variable>
+                  
+                  <xsl:for-each select="cs:asset($subQuery)">
+                   
+                <colorAsset>
+                <assetId>
+                    <xsl:value-of select="@id" />
+                </assetId>
+                
+                <relatedBrands>
+                  <xsl:for-each select="parent_asset_rel[@key='color.']">
+                    <brandId>
+                      <xsl:value-of select="@parent_asset"/>
+                    </brandId>
+                  </xsl:for-each>
+                </relatedBrands>
+                
+                <name>
+                    <xsl:value-of select="@name" />
+                </name>
+                
+                <description>
+                    <xsl:value-of select="@description" />
+                </description>
+                
+                <pantone>
+                  <xsl:value-of select="asset_feature[@feature='color:pantone']/@value_string"/>
+                </pantone>
+                
+                <hexValue>
+                  <xsl:value-of select="asset_feature[@feature='color:hexvalue']/@value_string"/>
+                </hexValue>
+                
+                <cyan>
+                  <xsl:value-of select="asset_feature[@feature='color:cyan']/@value_long"/>
+                </cyan>
+                
+                <magenta>
+                  <xsl:value-of select="asset_feature[@feature='color:magenta']/@value_long"/>
+                </magenta>
+                
+                <yellow>
+                  <xsl:value-of select="asset_feature[@feature='color:yellow']/@value_long"/>
+                </yellow>
+                
+                <black>
+                  <xsl:value-of select="asset_feature[@feature='color:black']/@value_long"/>
+                </black>
+                
+                <red>
+                  <xsl:value-of select="asset_feature[@feature='color:red']/@value_long"/>
+                </red>
+                
+                <green>
+                  <xsl:value-of select="asset_feature[@feature='color:green']/@value_long"/>
+                </green>
+                
+                <blue>
+                  <xsl:value-of select="asset_feature[@feature='color:blue']/@value_long"/>
+                </blue>
+                
+                <cmykProfile>
+                  <xsl:value-of select="asset_feature[@feature='color:cmykprofile']/@value_key"/>
+                </cmykProfile>
+                
+                <rgbProfile>
+                  <xsl:value-of select="asset_feature[@feature='color:rbgprofile']/@value_key"/>
+                </rgbProfile>
+                </colorAsset>
+              </xsl:for-each> 
+                    
+        </xsl:for-each>
+         </kwikeeApiV3>
+
+    </xsl:template>
+</xsl:stylesheet>

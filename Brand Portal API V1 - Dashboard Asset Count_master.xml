@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions"
+    xmlns:corpus="http://www.censhare.com/xml/3.0.0/corpus"
+    xmlns:csc="http://www.censhare.com/censhare-custom"
+    exclude-result-prefixes="cs corpus csc">
+    
+     <!-- Brand Portal API - counts assets to be used on portal dashboard
+          April 2019 - Bruno Schrappe
+     -->
+
+
+    <!-- root match -->
+    <xsl:template match="/">
+
+      <!-- All products -->
+        <xsl:variable name="query">
+            <query count-rows="true" type="asset">
+                    <condition name="censhare:asset.type" value="product."/>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="result">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$query"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="productCount" select="$result/result/assets/@row-count"/>
+      
+      <!-- Only current products -->  
+        <xsl:variable name="queryCurrent">
+            <query count-rows="true" type="asset">
+              <and>
+                    <condition name="censhare:asset.type" value="product."/>
+                    <condition name="kwikee:interface.product-is-current" value="true"/>
+              </and>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultCurrent">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryCurrent"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="currentCount" select="$resultCurrent/result/assets/@row-count"/>
+        
+        <!-- Only published products (Public Library) -->  
+        <xsl:variable name="queryPublished">
+            <query count-rows="true" type="asset">
+              <and>
+                    <condition name="censhare:asset.type" value="product."/>
+                    <condition name="censhare:module.oc.permission.group-ref" value="2411643" />
+              </and>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultPublished">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryPublished"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="publishedCount" select="$resultPublished/result/assets/@row-count"/>
+        
+      <!-- Brands -->  
+        <xsl:variable name="queryBrands">
+            <query count-rows="true" type="asset">
+                    <condition name="censhare:asset.type" value="brand."/>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultBrands">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryBrands"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="brandCount" select="$resultBrands/result/assets/@row-count"/>
+        
+                
+      <!-- Total Images -->  
+        <xsl:variable name="queryImages">
+            <query count-rows="true" type="asset">
+                    <condition name="censhare:asset.type" value="picture."/>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultImages">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryImages"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="imageCount" select="$resultImages/result/assets/@row-count"/>
+        
+      <!-- Product Images -->  
+        <xsl:variable name="queryProdImages">
+            <query count-rows="true" type="asset">
+              <and>
+                    <condition name="censhare:asset.type" value="picture."/>
+                    <relation target="parent" type="user.media.">
+                      <target>
+                        <condition name="censhare:asset.type" value="product."/>
+                    </target>
+                    </relation>
+              </and>      
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultProdImages">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryProdImages"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="prodImageCount" select="$resultProdImages/result/assets/@row-count"/>
+        
+        <!-- Videos -->  
+        <xsl:variable name="queryVideos">
+            <query count-rows="true" type="asset">
+                    <condition name="censhare:asset.type" value="video."/>
+            </query>
+        </xsl:variable>
+        <xsl:variable name="resultVideos">
+            <cs:command name="asset.query" return-slot="result" returning="result">
+                <cs:param name="data" select="$queryVideos"/>
+            </cs:command>
+        </xsl:variable>
+        <xsl:variable name="videoCount" select="$resultVideos/result/assets/@row-count"/>
+        
+        <brandApiDashboard>
+          
+          <assetCount>
+            <type>Videos</type>
+            <count><xsl:value-of select="$videoCount"/></count>
+          </assetCount>
+          
+          <assetCount>
+            <type>Brands</type>
+            <count><xsl:value-of select="$brandCount"/></count>
+          </assetCount>
+
+          <assetCount>
+            <type>Products (published)</type>
+            <count><xsl:value-of select="$publishedCount"/></count>
+          </assetCount>
+          
+          <assetCount>
+            <type>Products (current)</type>
+            <count><xsl:value-of select="$currentCount"/></count>
+          </assetCount>
+          
+          <assetCount>
+            <type>Products (total)</type>
+            <count><xsl:value-of select="$productCount"/></count>
+          </assetCount>
+          
+          <assetCount>
+            <type>Product Images</type>
+            <count><xsl:value-of select="$prodImageCount"/></count>
+          </assetCount>
+          
+          <assetCount>
+            <type>Images (total)</type>
+            <count><xsl:value-of select="$imageCount"/></count>
+          </assetCount>
+          
+
+        </brandApiDashboard>
+        
+    </xsl:template>
+
+
+</xsl:stylesheet>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0"
+  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+  xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions"
+  xmlns:corpus="http://www.censhare.com/xml/3.0.0/corpus"
+  xmlns:csc="http://www.censhare.com/censhare-custom"
+  xmlns:myfn="local-functions"
+  exclude-result-prefixes="#all"
+  >
+
+  <xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="no"/>
+
+  <xsl:template match="/">
+
+    <!-- Creates a new, blank background job for exports or imports
+         June 2019 - Bruno Schrappe
+    -->
+
+    <xsl:param name="sheetName"/>
+
+              <!-- This line retrieves the calling user main domain and creates the asset under that domain - pretty clever eh?-->
+                <xsl:variable name="userMainDomain" select="cs:user-domains(number(fn:system-property('censhare:party-id')))[1]"/>
+                
+                <xsl:variable name="asset_xml">
+                  <asset name="{$sheetName}" type="spreadsheet." domain="{$userMainDomain}">
+                  </asset>
+                </xsl:variable>
+            
+                <xsl:variable name="job_asset_output"/>
+     
+                <cs:command name="com.censhare.api.assetmanagement.CheckInNew" returning="job_asset_output">
+                  <cs:param name="source" select="$asset_xml"/>
+                </cs:command>
+<result>
+<status>success</status>
+<assetId>
+  <xsl:value-of select="$job_asset_output/@id"/>
+</assetId>
+</result>
+
+  </xsl:template>
+
+
+
+</xsl:stylesheet>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:censhare="http://www.censhare.com/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions" exclude-result-prefixes="cs">
+
+    <!-- Return xslx file attached to the asset
+    -->
+    
+    <xsl:param name="assetId"/>
+
+    <xsl:template match="/">
+      <xsl:variable name="myLittleAsset" select="cs:asset('limit=1')[@censhare:asset.id=$assetId and @censhare:asset.type='spreadsheet.']"/>
+      <asset>
+        <id><xsl:value-of select="$myLittleAsset/@id"/></id>
+        <xsl:variable name="url" select ="$myLittleAsset/storage_item[@mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']/@url"/>
+        <xsl:variable name="fileName" select="tokenize($url, '/')[last()]" />
+        <xsl:variable name="url1" select="replace($url,'censhare:///service/assets/asset/id/', '')" />
+        <xsl:variable name="encodedUrl" select="concat(cs:encode-base64($url1), '/')" />
+        <url>
+          <xsl:value-of select="$url"/>
+        </url>
+        <download-url>
+          <xsl:value-of select="concat('https://cms-api.kwikee.com/ws/rest/service/assets/asset/id/',$url1)" />
+        </download-url>
+        <encoded-url>
+        <xsl:value-of select="concat('https://brandportal.azure-api.net/cdn/v1/file/',$encodedUrl, $fileName)" />
+        </encoded-url>
+         </asset>
+    </xsl:template>
+    
+</xsl:stylesheet>

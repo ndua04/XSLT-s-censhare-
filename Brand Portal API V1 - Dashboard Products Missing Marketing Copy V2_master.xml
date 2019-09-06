@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions"
+    xmlns:corpus="http://www.censhare.com/xml/3.0.0/corpus"
+    xmlns:csc="http://www.censhare.com/censhare-custom"
+    xmlns:censhare="http://www.censhare.com/"
+    exclude-result-prefixes="cs corpus csc">
+    
+     <!-- Brand Portal API - List of current products missing assets
+          May 2019 - Bruno Schrappe
+     -->
+
+
+    <xsl:template match="/">
+      
+        <brandApiDashboard>    
+        
+          <assetCount>
+            <type>Products missing marketing copy (total)</type>
+            <count>0</count>
+          </assetCount>
+          
+      <!-- Only current products -->  
+        <xsl:variable name="queryCurrent">
+            <query limit="50000">
+              <and>
+                <condition name="censhare:asset.type" value="product."/>
+                <condition name="kwikee:interface.product-is-current" value="true"/>
+                  <or>
+                    <condition name="censhare:module.oc.permission.group-ref" value="2411643"/>
+                    <condition name="censhare:module.oc.permission.group-ref" value="2411642"/>
+                  </or>
+              </and>
+              <not>
+                <condition name="censhare:asset.name" value="untitled"/>
+                <condition name="kwikee:product.functionalName" value="Logo"/>
+              </not>
+
+            </query>
+        </xsl:variable>
+        
+      <xsl:for-each select="cs:asset($queryCurrent)">
+        <xsl:variable name="mktText" select = "asset_feature[@feature='kwikee:product.productText']"/>
+        <xsl:choose>
+          <xsl:when test="$mktText">
+            <!-- go fishing -->  
+          </xsl:when>
+        <xsl:otherwise>
+          <productsMissingMktCopy censhare:_annotation.multi='true'>
+              <id><xsl:value-of select="@id"/></id>
+              <gtin><xsl:value-of select="asset_feature[@feature='kwikee:product.gtin']/@value_string"/></gtin>
+              <name><xsl:value-of select="@name"/></name>
+            </productsMissingMktCopy>
+          </xsl:otherwise>
+          </xsl:choose>
+        
+      </xsl:for-each>
+  </brandApiDashboard> 
+      
+      
+    </xsl:template>
+
+
+</xsl:stylesheet>

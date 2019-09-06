@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:censhare="http://www.censhare.com/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions" exclude-result-prefixes="cs">
+    
+    <!-- Checks a background job for status and returns the linked file if completed and available.
+         June 2019 – Bruno Schrappe (getting old for this, btw)
+    -->
+    
+    <xsl:param name="assetId"/>
+
+    <xsl:template match="/">
+      <xsl:variable name="myLittleAsset" select="cs:asset('limit=1')[@censhare:asset.id=$assetId and @censhare:asset.type='process.kwikee:job.']"/>
+      <asset>
+        <id><xsl:value-of select="$assetId"/></id>
+        <xsl:variable name="jobStatus" select ="$myLittleAsset/asset_feature[@feature='kwikee:job-processing-status']/@value_key"/>
+        <xsl:choose>
+        <xsl:when test="$jobStatus">
+        <status>
+          <xsl:value-of select="$jobStatus"/>
+        </status>
+        </xsl:when>
+        <xsl:otherwise>
+                  <status>executing</status>
+        </xsl:otherwise>
+        </xsl:choose>
+           <xsl:variable name="jobProgress" select ="$myLittleAsset/asset_feature[@feature='kwikee:job-progress']/@value_long"/>
+       
+          <xsl:choose>
+            <xsl:when test="$jobProgress">
+             <progress>
+               <xsl:value-of select="$jobProgress"/>
+             </progress>
+          </xsl:when>
+          <xsl:otherwise>
+            <progress>0</progress>
+          </xsl:otherwise>
+          </xsl:choose>
+        
+      
+        <!-- THIS IS GREAT - reads XML from the master file linked to the asset, which has log tags include here (errors, messages or warnings) - Bruno -->
+       
+       <xsl:if test="$jobProgress">
+        <cs:command name="com.censhare.api.io.ReadXML" returning="masterXml">
+          <cs:param name="source" select="$myLittleAsset/storage_item[@key='master'][1]"/>
+        </cs:command>
+        <xsl:copy-of select="$masterXml/errors"/>
+        <xsl:copy-of select="$masterXml/messages"/>
+        <xsl:copy-of select="$masterXml/warnings"/>
+          
+      <xsl:if test="$jobStatus='done'">
+      <xsl:variable name="linkedFileId" select="$myLittleAsset/child_asset_rel[@key='user.']/@child_asset"/>
+      <xsl:if test="$linkedFileId">
+        <linkedFile>
+          <id>
+            <xsl:value-of select="$linkedFileId"/>
+          </id>
+          <xsl:variable name="myLinkedFile" select="cs:asset('limit=1')[@censhare:asset.id=$linkedFileId]"/>
+          <xsl:variable name="masterUrl" select="$myLinkedFile/storage_item[@key='master']/@url"/>  
+          <xsl:variable name="fileName" select="tokenize($masterUrl, '/')[last()]" />
+          <xsl:variable name="url1" select="replace($masterUrl,'censhare:///service/assets/asset/id/', '')" />
+          <xsl:variable name="encodedUrl" select="concat(cs:encode-base64($url1), '/')" />
+          <url>
+            <xsl:value-of select="concat('https://brandportal.azure-api.net/cdn/v1/file/',$encodedUrl, $fileName)" />
+          </url>
+       </linkedFile>
+       </xsl:if>
+      </xsl:if>
+      </xsl:if>
+         </asset>
+    </xsl:template>
+    
+</xsl:stylesheet>

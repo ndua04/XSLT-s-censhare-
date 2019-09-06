@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:censhare="http://www.censhare.com/" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions" exclude-result-prefixes="cs">
+  
+    <!-- Brand Portal XSLT returning Brands given a list of censhare users
+         March 2019 - Bruno Schrappe
+         I dislike XSLTs so much!!! 
+         Anyway, this XSLT uses the censhare custom command to query master data tables, which unsurprisingly behave like...
+         ...SQL tables.
+     -->
+    
+    <xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="no" />
+    <xsl:param name="users" />
+    <xsl:variable name="userList" select="str:tokenize($users,',')" />
+
+    <!-- root match -->
+    <xsl:template match="/">
+      <brandPortalAPI>
+        <xsl:for-each select="$userList"> <!-- Iterates through list of users -->
+          <xsl:variable name="userLogin" select="."/>
+          <xsl:for-each select="cs:master-data('party')[@login=$userLogin]"> <!-- the party table holds the main domain so we can check if there is a manufacturer at that level-->
+            <user>
+              <login>
+                <xsl:value-of select="@login"/>
+              </login>
+              <xsl:variable name="mainDomain" select="@main_domain"/>
+              <xsl:variable name="partyId" select="@id"/>
+              <xsl:for-each select="cs:asset(limit='1')[@censhare:asset.type = 'kwikee:manufacturer.']/cs:asset()[@censhare:asset.domain = $mainDomain]">
+                <manufacturer>
+                  <xsl:value-of select="@name"/>
+                </manufacturer>
+              </xsl:for-each>
+              <brands>
+                <xsl:for-each select="cs:master-data('party_role')[@party_id=$partyId]"> <!-- and the party_role table has all the domains, including main, so we can list brands at these levels-->
+                  <xsl:variable name="roleDomain" select="@domain"/>
+                  <xsl:for-each select="cs:asset(limit='1')[@censhare:asset.type = 'brand.']/cs:asset()[@censhare:asset.domain = $roleDomain]">
+                    <brand>
+                      <xsl:value-of select="@name"/>
+                    </brand>
+                  </xsl:for-each>
+                </xsl:for-each>
+              </brands>
+            </user>
+          </xsl:for-each>
+        </xsl:for-each>
+      </brandPortalAPI>
+    </xsl:template>
+    
+</xsl:stylesheet>

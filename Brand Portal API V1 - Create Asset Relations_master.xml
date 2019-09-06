@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsl:stylesheet version="2.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:cs="http://www.censhare.com/xml/3.0.0/xpath-functions"
+    xmlns:corpus="http://www.censhare.com/xml/3.0.0/corpus"
+    xmlns:csc="http://www.censhare.com/censhare-custom">
+
+    <xsl:output method="xml" encoding="UTF-8" omit-xml-declaration="no"/>
+
+    <!-- Parent and child asset IDs -->
+    <xsl:param name="parentId"/>
+    <xsl:param name="childId"/>
+        
+    <!-- templates to remove and add relations to assets -->
+    <xsl:template match="/">
+        <xsl:variable name="asset" select="cs:asset()[@censhare:asset.id = $parentId]"/>
+
+       <cs:command name="com.censhare.api.assetmanagement.CheckOut" returning="assetCheckedOut">
+          <cs:param name="source" select="$asset"/>
+        </cs:command>
+        
+        <xsl:variable name="addedChild">
+            <xsl:apply-templates select="$asset" mode="add-relation">
+                <xsl:with-param name="direction" select="'child'"/>
+                <xsl:with-param name="targetId" select="$childId"/>
+                <xsl:with-param name="relationKey" select="'user.'"/>
+            </xsl:apply-templates>
+        </xsl:variable>
+        <cs:command name="com.censhare.api.assetmanagement.CheckIn" returning="resultAssetXml">
+            <cs:param name="source">
+                <xsl:copy-of select="$addedChild"/>
+            </cs:param>
+        </cs:command>
+        <root>Relation created
+            <!--
+            <xsl:copy-of select="$addedParent"/>
+            -->
+        </root>
+    </xsl:template>
+
+
+
+    <!-- generic part -->
+
+    <xsl:template match="asset" mode="remove-relation">
+        <xsl:param name="direction"/>
+        <xsl:param name="targetId"/>
+        <xsl:param name="relationKey"/>
+        <xsl:variable name="elementName"
+            select="
+                string-join(($direction,
+                '_asset_rel'), '')"/>
+        <xsl:variable name="targetAttribute"
+            select="
+                string-join(($direction,
+                '_asset'), '')"/>
+        <xsl:element name="asset">
+            <xsl:for-each select="@*">
+                <xsl:attribute name="{local-name()}" select="."/>
+            </xsl:for-each>
+            <elementName>
+                <xsl:value-of select="$elementName"/>
+            </elementName>
+            <targetAttribute>
+                <xsl:value-of select="$targetAttribute"/>
+            </targetAttribute>
+            <xsl:for-each
+                select="*[local-name() != $elementName or @key != $relationKey or not(@*[local-name() = $targetAttribute] = $targetId)]">
+                <xsl:apply-templates select="." mode="copy-recursive"/>
+            </xsl:for-each>
+        </xsl:element>
+    </xsl:template>
+
+    <xsl:template match="asset" mode="add-relation">
+        <xsl:param name="direction"/>
+        <xsl:param name="targetId"/>
+        <xsl:param name="relationKey"/>
+        <xsl:variable name="elementName"
+            select="
+                string-join(($direction, '_asset_rel'), '')"/>
+        <xsl:variable name="targetAttribute"
+            select="
+                string-join(($direction, '_asset'), '')"/>
+        <xsl:element name="asset">
+            <xsl:for-each select="@*">
+                <xsl:attribute name="{local-name()}" select="."/>
+            </xsl:for-each>
+            <xsl:for-each select="*">
+                <xsl:apply-templates select="." mode="copy-recursive"/>
+            </xsl:for-each>
+            <xsl:if
+                test="count(*[local-name() = $elementName and @key = $relationKey and @*[local-name() = $targetAttribute] = $targetId]) = 0">
+                <xsl:element name="{$elementName}">
+                    <xsl:attribute name="key" select="$relationKey"/>
+                    <xsl:attribute name="{$targetAttribute}" select="$targetId"/>
+                </xsl:element>
+            </xsl:if>
+        </xsl:element>
+    </xsl:template>
+
+    <xsl:template match="*" mode="copy-recursive">
+        <xsl:element name="{local-name()}">
+            <xsl:for-each select="@*">
+                <xsl:attribute name="{local-name()}" select="."/>
+            </xsl:for-each>
+            <xsl:apply-templates select="./*" mode="copy-recursive"/>
+        </xsl:element>
+    </xsl:template>
+
+</xsl:stylesheet>
